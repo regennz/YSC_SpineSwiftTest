@@ -20,11 +20,11 @@ class YSC_SpineBone: SKSpriteNode {
     var ikRootNode:SKNode!
     var ikBendPositive = true
     
-    var defaultPosition = CGPointZero
+    var defaultPosition = CGPoint.zero
     var defaultScaleX = CGFloat(1)
     var defaultScaleY = CGFloat(1)
     var defaultRotation = CGFloat(0)
-    var basePosition = CGPointZero
+    var basePosition = CGPoint.zero
     var baseScaleX = CGFloat(1)
     var baseScaleY = CGFloat(1)
     var baseRotation = CGFloat(0)
@@ -32,7 +32,7 @@ class YSC_SpineBone: SKSpriteNode {
     var SRTAction = Dictionary<String, SKAction>()  // animation name : SRTAction
 
     // MARK:- SETUP
-    func spawn(boneJSON boneJSON:JSON) {
+    func spawn(boneJSON:JSON) {
         
         self.name = boneJSON["name"].stringValue
         self.parentName = boneJSON["parent"].string         // nil if there's no parent
@@ -89,7 +89,7 @@ class YSC_SpineBone: SKSpriteNode {
         self.baseScaleY = self.yScale
         
         // set to default attachment
-        self.enumerateChildNodesWithName("*") { (node:SKNode, stop:UnsafeMutablePointer<ObjCBool>) -> Void in
+        self.enumerateChildNodes(withName: "*") { (node:SKNode, stop:UnsafeMutablePointer<ObjCBool>) -> Void in
             if let slot = node as? YSC_SpineSlot {
                 slot.setToDefaultAttachment()
             }
@@ -98,11 +98,11 @@ class YSC_SpineBone: SKSpriteNode {
     }
     // MARK:- ANIMATION
     
-    func createAnimations(animationName:String, SRTTimelines:JSON, longestDuration:NSTimeInterval) {
+    func createAnimations(_ animationName:String, SRTTimelines:JSON, longestDuration:TimeInterval) {
         
-        var duration:NSTimeInterval = 0
-        var elapsedTime:NSTimeInterval = 0
-        var gabageTime:NSTimeInterval = 0
+        var duration:TimeInterval = 0
+        var elapsedTime:TimeInterval = 0
+        var gabageTime:TimeInterval = 0
         var gabageAction = SKAction()
         
         let rotateTimelines = SRTTimelines["rotate"]
@@ -121,11 +121,11 @@ class YSC_SpineBone: SKSpriteNode {
         
         for (_, rotateTimeline):(String, JSON) in rotateTimelines {
             
-            duration = NSTimeInterval(rotateTimeline["time"].doubleValue) - elapsedTime
-            elapsedTime = NSTimeInterval(rotateTimeline["time"].doubleValue)
+            duration = TimeInterval(rotateTimeline["time"].doubleValue) - elapsedTime
+            elapsedTime = TimeInterval(rotateTimeline["time"].doubleValue)
             
             dAngle = CGFloat(rotateTimeline["angle"].doubleValue)
-            dAngle = dAngle % 360
+            dAngle = dAngle.truncatingRemainder(dividingBy: 360)
             if dAngle < -180 {
                 dAngle = dAngle + 360
             } else if dAngle >= 180 {
@@ -134,29 +134,29 @@ class YSC_SpineBone: SKSpriteNode {
             dAngle = dAngle * SPINE_DEGTORADFACTOR
             currentAngle = self.defaultRotation + dAngle
             
-            action = SKAction.rotateToAngle(currentAngle, duration: duration)
+            action = SKAction.rotate(toAngle: currentAngle, duration: duration)
 
-            if rotateTimeline["curve"].isExists() {
+            if rotateTimeline["curve"].exists() {
                 let curveInfo = rotateTimeline["curve"].rawValue
-                if curveInfo.isKindOfClass(NSString) {
+                if curveInfo is NSString {
                     let curveString = curveInfo as! String
                     if curveString == "stepped" {
                         // stepped curve
-                        action.timingMode = .EaseIn
+                        action.timingMode = .easeIn
                     }
-                } else if curveInfo.isKindOfClass(NSArray) {
+                } else if curveInfo is NSArray {
                     // bezier curve
-                    action.timingMode = .EaseInEaseOut
+                    action.timingMode = .easeInEaseOut
                 }
             } else {
                 // linear curve
-                action.timingMode = .Linear
+                action.timingMode = .linear
             }
             rotateActionSequence.append(action)
             
         }
         gabageTime = longestDuration - elapsedTime
-        gabageAction = SKAction.waitForDuration(gabageTime)
+        gabageAction = SKAction.wait(forDuration: gabageTime)
        
         rotateActionSequence.append(gabageAction)
         noInheritRotSequence.append(gabageAction)
@@ -175,8 +175,8 @@ class YSC_SpineBone: SKSpriteNode {
         var currentY = CGFloat(0)
         for (_, translateTimeline):(String, JSON) in translateTimelines {
             
-            duration = NSTimeInterval(translateTimeline["time"].doubleValue) - elapsedTime
-            elapsedTime = NSTimeInterval(translateTimeline["time"].doubleValue)
+            duration = TimeInterval(translateTimeline["time"].doubleValue) - elapsedTime
+            elapsedTime = TimeInterval(translateTimeline["time"].doubleValue)
             
             dx = CGFloat(translateTimeline["x"].doubleValue)
             dy = CGFloat(translateTimeline["y"].doubleValue)
@@ -184,29 +184,29 @@ class YSC_SpineBone: SKSpriteNode {
             currentY = self.defaultPosition.y + dy
             
             let position = CGPoint(x: currentX, y: currentY)
-            action = SKAction.moveTo(position, duration: duration)
+            action = SKAction.move(to: position, duration: duration)
 
-            if translateTimeline["curve"].isExists() {
+            if translateTimeline["curve"].exists() {
                 let curveInfo = translateTimeline["curve"].rawValue
-                if curveInfo.isKindOfClass(NSString) {
+                if curveInfo is NSString {
                     let curveString = curveInfo as! String
                     if curveString == "stepped" {
                         // stepped curve
-                        action.timingMode = .EaseIn
+                        action.timingMode = .easeIn
                     }
-                } else if curveInfo.isKindOfClass(NSArray) {
+                } else if curveInfo is NSArray {
                     // bezier curve
-                    action.timingMode = .EaseInEaseOut
+                    action.timingMode = .easeInEaseOut
                 }
             } else {
                 // linear curve
-                action.timingMode = .Linear
+                action.timingMode = .linear
             }
             translateActionSequence.append(action)
             
         }
         gabageTime = longestDuration - elapsedTime
-        gabageAction = SKAction.waitForDuration(gabageTime)
+        gabageAction = SKAction.wait(forDuration: gabageTime)
         translateActionSequence.append(gabageAction)
         let translateAction = SKAction.sequence(translateActionSequence)
         
@@ -214,34 +214,34 @@ class YSC_SpineBone: SKSpriteNode {
         duration = 0
         elapsedTime = 0
         for (_, scaleTimeline):(String, JSON) in scaleTimelines {
-            duration = NSTimeInterval(scaleTimeline["time"].doubleValue) - elapsedTime
-            elapsedTime = NSTimeInterval(scaleTimeline["time"].doubleValue)
+            duration = TimeInterval(scaleTimeline["time"].doubleValue) - elapsedTime
+            elapsedTime = TimeInterval(scaleTimeline["time"].doubleValue)
             
             let scaleX = CGFloat(scaleTimeline["x"].doubleValue)
             let scaleY = CGFloat(scaleTimeline["y"].doubleValue)
-            action = SKAction.scaleXTo(scaleX, y: scaleY, duration: duration)
+            action = SKAction.scaleX(to: scaleX, y: scaleY, duration: duration)
 
-            if scaleTimeline["curve"].isExists() {
+            if scaleTimeline["curve"].exists() {
                 let curveInfo = scaleTimeline["curve"].rawValue
-                if curveInfo.isKindOfClass(NSString) {
+                if curveInfo is NSString {
                     let curveString = curveInfo as! String
                     if curveString == "stepped" {
                         // stepped curve
-                        action.timingMode = .EaseIn
+                        action.timingMode = .easeIn
                     }
-                } else if curveInfo.isKindOfClass(NSArray) {
+                } else if curveInfo is NSArray {
                     // bezier curve
-                    action.timingMode = .EaseInEaseOut
+                    action.timingMode = .easeInEaseOut
                 }
             } else {
                 // linear curve
-                action.timingMode = .Linear
+                action.timingMode = .linear
             }
             
             scaleActionSequence.append(action)
         }
         gabageTime = longestDuration - elapsedTime
-        gabageAction = SKAction.waitForDuration(gabageTime)
+        gabageAction = SKAction.wait(forDuration: gabageTime)
         scaleActionSequence.append(gabageAction)
         let scaleAction = SKAction.sequence(scaleActionSequence)
         
@@ -252,40 +252,40 @@ class YSC_SpineBone: SKSpriteNode {
         self.SRTAction[animationName] = SKAction.sequence(finalActionSequence)
     }
     
-    func runAnimation(animationName:String, count:Int) {
+    func runAnimation(_ animationName:String, count:Int) {
         
         self.removeAllActions()     // reset all actions first
         self.setToDefaults()
         
         let SRTAction = self.SRTAction[animationName]!
         if count <= -1 {
-            let actionForever = SKAction.repeatActionForever(SRTAction)
-            self.runAction(actionForever, withKey: animationName)
+            let actionForever = SKAction.repeatForever(SRTAction)
+            self.run(actionForever, withKey: animationName)
         } else {
-            let repeatedAction = SKAction.repeatAction(SRTAction, count: count)
-            self.runAction(repeatedAction, withKey: animationName)
+            let repeatedAction = SKAction.repeat(SRTAction, count: count)
+            self.run(repeatedAction, withKey: animationName)
         }
     }
     
-    func runAnimationUsingQueue(animationName:String, count:Int, interval:NSTimeInterval, queuedAnimationName:String) {
+    func runAnimationUsingQueue(_ animationName:String, count:Int, interval:TimeInterval, queuedAnimationName:String) {
         self.removeAllActions()     // reset all actions first
         self.setToDefaults()
         
         let SRTAction = self.SRTAction[animationName]!
-        let repeatingAction = SKAction.repeatAction(SRTAction, count: count)
+        let repeatingAction = SKAction.repeat(SRTAction, count: count)
         if count <= -1 {
-            let actionForever = SKAction.repeatActionForever(SRTAction)
-            self.runAction(actionForever, withKey: animationName)
+            let actionForever = SKAction.repeatForever(SRTAction)
+            self.run(actionForever, withKey: animationName)
         } else  {
-            self.runAction(repeatingAction, completion: { () -> Void in
+            self.run(repeatingAction, completion: { () -> Void in
                 let actionSequence:Array<SKAction> = [
-                    SKAction.runBlock({ () -> Void in
+                    SKAction.run({ () -> Void in
                         self.setToDefaults()
                     }),
-                    SKAction.waitForDuration(interval),
-                    SKAction.repeatActionForever(self.SRTAction[queuedAnimationName]!)
+                    SKAction.wait(forDuration: interval),
+                    SKAction.repeatForever(self.SRTAction[queuedAnimationName]!)
                     ]
-                self.runAction(SKAction.sequence(actionSequence), withKey: animationName)
+                self.run(SKAction.sequence(actionSequence), withKey: animationName)
             })
         }
     }
